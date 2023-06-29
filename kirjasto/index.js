@@ -112,6 +112,8 @@ const resolvers = {
     bookCount: () => books.length,
     authorCount: () => authors.length,
     allBooks: (root, args) => {
+
+      // Git töheltämistä, tämä tuli jo 8.4 yhteydessä koska revertoin aiemman 8.5 pushauksen
       if (args.length === 0) return books
       const { author, genre } = args
       const filterByAuthor = (author) => (books) => books.filter(book => book.author === author)
