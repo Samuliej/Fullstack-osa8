@@ -1,5 +1,6 @@
 const { ApolloServer } = require('@apollo/server')
 const { startStandaloneServer } = require('@apollo/server/standalone')
+const { GraphQLBoolean, GraphQLError } = require( 'graphql' )
 const { v4: uuid4 }  = require('uuid')
 
 
@@ -85,6 +86,7 @@ const typeDefs = `
 
   type Author {
     name: String!
+    born: Int
     bookCount: Int!
   }
 
@@ -104,6 +106,15 @@ const typeDefs = `
       genre: String
       ): [Book!]!
     allAuthors: [Author!]!
+  }
+
+  type Mutation {
+    addBook(
+      title: String!
+      author: String!
+      published: Int!
+      genres: [String!]!
+    ): Book
   }
 `
 
@@ -132,9 +143,28 @@ const resolvers = {
 
         return {
           name: author.name,
+          born: author.born,
           bookCount: bookCount
         }
       })
+  },
+  Mutation: {
+    addBook: (root, args) => {
+      if (books.find(b => b.title === args.title)) {
+        throw new GraphQLError('This book already exists', {
+          extensions: {
+            code: 'BAD_USER_INPUT',
+            invalidArgs: args.title
+          }
+        })
+      }
+      if (!authors.find(a => a.name === args.author))
+        authors = authors.concat({ name: args.author, id: uuid4() })
+
+      const book = { ...args, id: uuid4() }
+      books = books.concat(book)
+      return book
+    }
   }
 }
 
