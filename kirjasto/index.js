@@ -115,6 +115,10 @@ const typeDefs = `
       published: Int!
       genres: [String!]!
     ): Book
+    editAuthor(
+      name: String!
+      setBornTo: Int!
+    ): Author
   }
 `
 
@@ -123,8 +127,6 @@ const resolvers = {
     bookCount: () => books.length,
     authorCount: () => authors.length,
     allBooks: (root, args) => {
-
-      // Git töheltämistä, tämä tuli jo 8.4 yhteydessä koska revertoin aiemman 8.5 pushauksen
       if (args.length === 0) return books
       const { author, genre } = args
       const filterByAuthor = (author) => (books) => books.filter(book => book.author === author)
@@ -164,6 +166,19 @@ const resolvers = {
       const book = { ...args, id: uuid4() }
       books = books.concat(book)
       return book
+    },
+    editAuthor: (root, args) => {
+      const { name, setBornTo } = args
+      let authorToUpdate = authors.find(author => author.name === name)
+      if (!authorToUpdate) return null
+      authorToUpdate = { ...authorToUpdate, born: setBornTo }
+      authors = authors.map(author =>
+        author.name === name
+        ? authorToUpdate
+        : author
+      )
+
+      return authorToUpdate
     }
   }
 }
