@@ -170,7 +170,9 @@ const resolvers = {
     editAuthor: (root, args) => {
       const { name, setBornTo } = args
       let authorToUpdate = authors.find(author => author.name === name)
-      if (!authorToUpdate) return null
+      if (!authorToUpdate) {
+        return null
+      }
       authorToUpdate = { ...authorToUpdate, born: setBornTo }
       authors = authors.map(author =>
         author.name === name
