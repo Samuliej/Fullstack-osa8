@@ -1,10 +1,11 @@
 import { ALL_AUTHORS, EDIT_AUTHOR } from '../queries'
 import { useMutation, useQuery } from '@apollo/client'
 import { useState } from 'react'
+import Select from 'react-select'
 
-
-const SetBirthYear = () => {
-  const [ name, setName ] = useState('')
+const SetBirthYear = ({ authors }) => {
+  const options = authors.map(author => ( { value: author.name, label: author.name } ))
+  const [ selectedAuthor, setSelectedAuthor ] = useState(null)
   const [ born, setBorn ] = useState('')
 
   const [ editAuthor ] = useMutation(EDIT_AUTHOR, {
@@ -18,8 +19,7 @@ const SetBirthYear = () => {
     event.preventDefault()
     try {
       const bornAsInt = Number.parseInt(born)
-      editAuthor({ variables: { name: name, setBornTo: bornAsInt } })
-      setName('')
+      editAuthor({ variables: { name: selectedAuthor.value, setBornTo: bornAsInt } })
       setBorn('')
     } catch (error) {
       console.log(error.message)
@@ -30,9 +30,10 @@ const SetBirthYear = () => {
     <div>
       <h2>Set birthyear</h2>
       <div>
-        name <input
-          value={name}
-          onChange={({ target }) => setName(target.value)}
+        <Select
+          defaultValue={selectedAuthor}
+          onChange={setSelectedAuthor}
+          options={options}
         />
       </div>
       <div>
@@ -77,7 +78,7 @@ const Authors = () => {
           ))}
         </tbody>
       </table>
-      <SetBirthYear />
+      <SetBirthYear authors={authors} />
     </div>
   )
 }
