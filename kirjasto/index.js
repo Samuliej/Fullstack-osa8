@@ -158,7 +158,7 @@ const resolvers = {
       const authorFilter = authorObj ? filterByAuthor(authorObj) : (books) => books
       const genreFilter = genre ? filterByGenre(genre) : (books) => books
       const allBooks = await Book.find({})
-      console.log('all books', allBooks)
+
       const filteredBooks = authorFilter(genreFilter(allBooks))
 
       return filteredBooks
