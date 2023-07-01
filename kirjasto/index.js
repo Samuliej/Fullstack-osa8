@@ -135,7 +135,7 @@ const typeDefs = `
       author: String!
       published: Int!
       genres: [String!]!
-    ): Book
+    ): Book!
     editAuthor(
       name: String!
       setBornTo: Int!
@@ -148,58 +148,80 @@ const resolvers = {
     bookCount: async () => Book.collection.countDocuments(),
     authorCount: () => Author.collection.countDocuments(),
     allBooks: async (root, args) => {
-      if (args.length === 0) return Book.find({})
+      if (args.length === 0) return await Book.find({})
       const { author, genre } = args
-      const filterByAuthor = (author) => (books) => books.filter(book => book.author === author)
+      const authorObj = await Author.findOne({ name: author })
+
+      const filterByAuthor = (author) => (books) => books.filter(book => book.author.equals(author._id))
       const filterByGenre = (genre) => (books) => books.filter(book => book.genres.includes(genre))
 
-      const authorFilter = author ? filterByAuthor(author) : (books) => books
+      const authorFilter = authorObj ? filterByAuthor(authorObj) : (books) => books
       const genreFilter = genre ? filterByGenre(genre) : (books) => books
-
-      const filteredBooks = authorFilter(genreFilter(books))
+      const allBooks = await Book.find({})
+      console.log('all books', allBooks)
+      const filteredBooks = authorFilter(genreFilter(allBooks))
 
       return filteredBooks
     },
     allAuthors: async () => {
-      return Author.find({})
+      return await Author.find({})
     }
   },
   Mutation: {
     addBook: async (root, args) => {
       let book
+      let author
       try {
-        let author = await Author.findOne({ name: args.author })
+        author = await Author.findOne({ name: args.author })
 
         if (!author) {
           author = new Author({ name: args.author, born: null })
           await author.save()
         }
+      } catch (error) {
+        throw new GraphQLError('Something went wrong creating the author', {
+          extensions: {
+            code: 'BAD_USER_INPUT',
+            invaldArgs: args.author,
+            error
+          }
+        })
+      }
 
+      try {
         book = new Book({ ...args, author: author._id })
         await book.save()
       } catch (error) {
+        // Remove the author if the book doesn't get through
+        await Author.findByIdAndRemove(author._id)
         throw new GraphQLError('Something went wrong creating the book', {
           extensions: {
             code: 'BAD_USER_INPUT',
-            invaligArgs: args.name,
+            invaligArgs: args.title,
             error
           }
         })
       }
       return book
     },
-    editAuthor: (root, args) => {
+
+    editAuthor: async (root, args) => {
       const { name, setBornTo } = args
-      let authorToUpdate = authors.find(author => author.name === name)
-      if (!authorToUpdate) {
-        return null
+      let authorToUpdate
+      try {
+        authorToUpdate = await Author.findOne({ name: name })
+        console.log(authorToUpdate)
+        authorToUpdate.born = setBornTo
+        await authorToUpdate.save()
+      } catch (error) {
+        throw new GraphQLError('Something went wrong updating the author', {
+          extensions: {
+            code: 'BAD_USER_INPUT',
+            invalidArgs: [name, setBornTo],
+            error
+          }
+        })
       }
-      authorToUpdate = { ...authorToUpdate, born: setBornTo }
-      authors = authors.map(author =>
-        author.name === name
-        ? authorToUpdate
-        : author
-      )
 
       return authorToUpdate
     }
