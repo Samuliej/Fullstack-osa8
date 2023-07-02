@@ -7,6 +7,7 @@ const mongoose = require('mongoose')
 mongoose.set('strictQuery', false)
 const Book = require('./models/Book')
 const Author = require('./models/Author')
+const User = require('./models/User')
 
 require('dotenv').config()
 
@@ -100,7 +101,7 @@ const resolvers = {
 
       const authorFilter = authorObj ? filterByAuthor(authorObj) : (books) => books
       const genreFilter = genre ? filterByGenre(genre) : (books) => books
-      const allBooks = await Book.find({})
+      const allBooks = await Book.find({}).populate('author')
 
       const filteredBooks = authorFilter(genreFilter(allBooks))
 
@@ -114,9 +115,19 @@ const resolvers = {
     }
   },
   Mutation: {
-    addBook: async (root, args) => {
+    addBook: async (root, args, context) => {
       let book
       let author
+
+      const currentUser = context.currentUser
+
+      if (!currentUser) {
+        throw new GraphQLError('not authenticated', {
+          extensions: {
+            code: 'BAD_USER_INPUT'
+          }
+        })
+      }
       try {
         author = await Author.findOne({ name: args.author })
 
@@ -153,8 +164,19 @@ const resolvers = {
       return book
     },
 
-    editAuthor: async (root, args) => {
+    editAuthor: async (root, args, context) => {
       const { name, setBornTo } = args
+
+      const currentUser = context.currentUser
+
+      if (!currentUser) {
+        throw new GraphQLError('not authenticated', {
+          extensions: {
+            code: 'BAD_USER_INPUT'
+          }
+        })
+      }
+
       let authorToUpdate
       try {
         authorToUpdate = await Author.findOne({ name: name })
@@ -172,6 +194,43 @@ const resolvers = {
       }
 
       return authorToUpdate
+    },
+
+    createUser: async (root, args) => {
+      const user = new User({ username: args.username })
+
+      try {
+        return user.save()
+      } catch (error) {
+        throw new GraphQLError('Something went wrong creating the user', {
+          extensions: {
+            code: 'BAD_USER_INPUT',
+            invalidArgs: args.username,
+            error
+          }
+        })
+      }
+    },
+
+    login: async (root, args) => {
+      const user = await User.findOne({ username: args.username })
+
+      if (!user || args.password !== 'salasana') {
+        throw new GraphQLError('wrong credentials', {
+          extensions: {
+            code: 'BAD_USER_INPUT'
+          }
+        })
+      }
+
+      const userForToken = {
+        username: user.username,
+        id: user._id
+      }
+
+      return {
+        value: jwt.sign(userForToken, process.env.JWT_SECRET)
+      }
     }
   }
 }
@@ -183,6 +242,19 @@ const server = new ApolloServer({
 
 startStandaloneServer(server, {
   listen: { port: 4000 },
+  context: async ({ req, res }) => {
+    const auth = req ? req.headers.authorization : null
+    if (auth && auth.startsWith('Bearer ')) {
+      const decodedToken = jwt.verify(
+        auth.substring(7), process.env.JWT_SECRET
+      )
+
+      const currentUser = await User
+        .findById(decodedToken.id)
+
+      return { currentUser }
+    }
+  }
 }).then(({ url }) => {
   console.log(`Server ready at ${url}`)
 })
