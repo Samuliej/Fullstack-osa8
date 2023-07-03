@@ -121,8 +121,6 @@ const resolvers = {
 
       const currentUser = context.currentUser
 
-      console.log(currentUser)
-
       if (!currentUser) {
         throw new GraphQLError('not authenticated', {
           extensions: {
@@ -216,9 +214,6 @@ const resolvers = {
 
     login: async (root, args) => {
       const user = await User.findOne({ username: args.username })
-
-      console.log(args.username)
-      console.log(args.password)
 
       if (!user || args.password !== 'salasana') {
         throw new GraphQLError('wrong credentials', {
