@@ -94,6 +94,9 @@ const resolvers = {
       }
 
       const { author, genre } = args
+
+      console.log(genre)
+
       const authorObj = await Author.findOne({ name: author })
 
       const filterByAuthor = (author) => (books) => books.filter(book => book.author.equals(author._id))

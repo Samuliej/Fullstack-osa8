@@ -1,10 +1,23 @@
 import { useState } from "react"
 import BookRow from "./BookRow"
-
-
+import { useLazyQuery } from "@apollo/client"
+import { ALL_BOOKS } from "../queries"
+import { useEffect } from "react"
 
 const Books = ({ books }) => {
   const [genre, setGenre] = useState('')
+  const [getBooks, result] = useLazyQuery(ALL_BOOKS)
+
+
+  useEffect(() => {
+    getBooks({ variables: { genre } })
+  }, [genre, getBooks])
+
+  if (result.loading) {
+    return <div>Books are loading...</div>
+  }
+
+  const booksByGenre = result.data ? result.data.allBooks : []
   const uniqueGenres = [...new Set(books.flatMap(book => book.genres))]
 
   return (
@@ -18,12 +31,7 @@ const Books = ({ books }) => {
             <th>author</th>
             <th>published</th>
           </tr>
-          {books.map((b) => {
-            if (!genre || genre === 'all genres' || b.genres.includes(genre)) {
-              return <BookRow key={b.title} book={b} />
-            }
-            return null
-          })}
+          {booksByGenre.map((b) => <BookRow key={b.title} book={b} /> ) }
         </tbody>
       </table>
       {uniqueGenres.map(genre => {
@@ -31,7 +39,7 @@ const Books = ({ books }) => {
           <button key={genre} onClick={() => setGenre(genre)}>{genre}</button>
         )
       })}
-      <button onClick={() => setGenre('all genres')}>all genres</button>
+      <button onClick={() => setGenre('')}>all genres</button>
     </div>
   )
 }
