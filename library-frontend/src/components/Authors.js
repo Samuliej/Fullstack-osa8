@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { useState } from 'react'
 import Select from 'react-select'
 
-const SetBirthYear = ({ authors }) => {
+const SetBirthYear = ({ authors, setError, setNotif }) => {
   const options = authors.map(author => ( { value: author.name, label: author.name } ))
   const [ selectedAuthor, setSelectedAuthor ] = useState(null)
   const [ born, setBorn ] = useState('')
@@ -11,7 +11,7 @@ const SetBirthYear = ({ authors }) => {
   const [ editAuthor ] = useMutation(EDIT_AUTHOR, {
     refetchQueries: [ { query: ALL_AUTHORS } ],
     onError: (error) => {
-      console.log(error.message)
+      setError(error.graphQLErrors[0].message)
     }
   })
 
@@ -21,6 +21,7 @@ const SetBirthYear = ({ authors }) => {
       const bornAsInt = Number.parseInt(born)
       editAuthor({ variables: { name: selectedAuthor.value, setBornTo: bornAsInt } })
       setBorn('')
+      setNotif(`Author ${selectedAuthor.value} updated succesfully`)
     } catch (error) {
       console.log(error.message)
     }
@@ -50,7 +51,7 @@ const SetBirthYear = ({ authors }) => {
 
 }
 
-const Authors = () => {
+const Authors = ({ setError, setNotif }) => {
   const result = useQuery(ALL_AUTHORS)
 
   if (result.loading) {
@@ -78,7 +79,7 @@ const Authors = () => {
           ))}
         </tbody>
       </table>
-      <SetBirthYear authors={authors} />
+      <SetBirthYear authors={authors} setError={setError} setNotif={setNotif} />
     </div>
   )
 }
