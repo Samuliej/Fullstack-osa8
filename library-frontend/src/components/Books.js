@@ -1,24 +1,10 @@
-import { useQuery } from "@apollo/client"
-import { ALL_BOOKS } from "../queries"
 import { useState } from "react"
+import BookRow from "./BookRow"
 
-const BookRow = ({ book }) => (
-  <tr key={book.title}>
-    <td>{book.title}</td>
-    <td>{book.author.name}</td>
-    <td>{book.published}</td>
-  </tr>
-)
 
-const Books = () => {
+
+const Books = ({ books }) => {
   const [genre, setGenre] = useState('')
-  const result = useQuery(ALL_BOOKS)
-
-  if (result.loading) {
-    return <div>Books are loading...</div>
-  }
-
-  const books = result.data.allBooks
   const uniqueGenres = [...new Set(books.flatMap(book => book.genres))]
 
   return (
