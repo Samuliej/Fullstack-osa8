@@ -8,7 +8,6 @@ const Books = ({ books }) => {
   const [genre, setGenre] = useState('')
   const [getBooks, result] = useLazyQuery(ALL_BOOKS)
 
-
   useEffect(() => {
     getBooks({ variables: { genre } })
   }, [genre, getBooks])
@@ -19,6 +18,7 @@ const Books = ({ books }) => {
 
   const booksByGenre = result.data ? result.data.allBooks : []
   const uniqueGenres = [...new Set(books.flatMap(book => book.genres))]
+
 
   return (
     <div>

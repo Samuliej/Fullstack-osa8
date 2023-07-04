@@ -9,7 +9,8 @@ const RecommendBooks = () => {
 
   useEffect(() => {
     if(result.data) {
-      const favoriteGenre = result.data.me.favoriteGenre
+      // Optional chaining fixed errors before page was loaded
+      const favoriteGenre = result.data?.me?.favoriteGenre
       getBooks({ variables: { genre: favoriteGenre } })
     }
   }, [result.data, getBooks])

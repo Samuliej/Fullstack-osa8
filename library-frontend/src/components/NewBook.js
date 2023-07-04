@@ -10,9 +10,54 @@ const NewBook = ({ setError, setNotif }) => {
   const [genres, setGenres] = useState([])
 
   const [ addBook ] = useMutation(ADD_BOOK, {
-    refetchQueries: [ { query: ALL_BOOKS }, { query: ALL_AUTHORS } ],
     onError: (error) => {
-      setError(error.graphQLErrors[0].message)
+      setError(error.message)
+    },
+    // works with using update
+    update: (cache, response) => {
+      // Handles updating the genre buttons
+      cache.updateQuery({ query: ALL_BOOKS, variables: { genre: '' }}, ({ allBooks }) => {
+      return {
+        allBooks: allBooks.concat(response.data.addBook)
+      }
+      })
+      // Handles updating all book list
+      cache.updateQuery({ query: ALL_BOOKS }, ({ allBooks }) => {
+        return {
+          allBooks: allBooks.concat(response.data.addBook)
+        }
+      })
+
+      // Handles updating the authors for both new author and existing author case
+      cache.updateQuery({ query: ALL_AUTHORS }, ({ allAuthors }) => {
+        const addedBook = response.data.addBook
+        const existingAuthor = allAuthors.find(author => author.name === addedBook.author.name)
+
+        if (existingAuthor) {
+          const updatedAuthors = allAuthors.map(author => {
+            if (author.name === existingAuthor.name) {
+              return {
+                ...author,
+                bookCount: author.bookCount + 1
+              }
+            }
+            return author
+          })
+
+          return {
+            allAuthors: updatedAuthors
+          }
+
+          // Case of new author
+        } else {
+          return {
+            allAuthors: [...allAuthors, {...addedBook.author, bookCount: 1 }]
+          }
+        }
+      })
+
+
+
     }
   })
 
