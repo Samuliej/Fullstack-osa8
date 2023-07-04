@@ -18,8 +18,6 @@ const resolvers = {
 
       const { author, genre } = args
 
-      console.log(genre)
-
       const authorObj = await Author.findOne({ name: author })
 
       const filterByAuthor = (author) => (books) => books.filter(book => book.author.equals(author._id))
@@ -34,6 +32,17 @@ const resolvers = {
       return filteredBooks
     },
     allAuthors: async () => {
+      /*
+      kysely   query {
+                allAuthors {
+                  name
+                  bookCount
+                }
+              }
+
+              Aiheuttaa vain yhden console.log() backendissä
+      */
+      console.log('kysely')
       return await Author.find({})
     },
     me: (root, args, context) => {
@@ -58,6 +67,7 @@ const resolvers = {
         author = await Author.findOne({ name: args.author })
 
         if (!author) {
+          // Uudelle authorille bookCount alustetaan nollaksi
           author = new Author({ name: args.author, born: null, bookCount: 0, books: [args.title] })
           await author.save()
         }
@@ -74,7 +84,7 @@ const resolvers = {
       try {
         book = new Book({ ...args, author: author })
         await book.save()
-
+        // Book count päivitetään backendissä joten allAuthors query ei aiheuta n+1 kyselyä
         await Author.updateOne({ _id: author._id }, { bookCount: author.bookCount + 1, books: [...author.books, args.title] })
       } catch (error) {
         // Remove the author if the book doesn't get through
