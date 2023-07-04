@@ -58,7 +58,7 @@ const resolvers = {
         author = await Author.findOne({ name: args.author })
 
         if (!author) {
-          author = new Author({ name: args.author, born: null, bookCount: 0 })
+          author = new Author({ name: args.author, born: null, bookCount: 0, books: [args.title] })
           await author.save()
         }
       } catch (error) {
@@ -75,7 +75,7 @@ const resolvers = {
         book = new Book({ ...args, author: author })
         await book.save()
 
-        await Author.updateOne({ _id: author._id }, { bookCount: author.bookCount + 1 })
+        await Author.updateOne({ _id: author._id }, { bookCount: author.bookCount + 1, books: [...author.books, args.title] })
       } catch (error) {
         // Remove the author if the book doesn't get through
         await Author.findByIdAndRemove(author._id)

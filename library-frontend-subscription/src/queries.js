@@ -6,6 +6,7 @@ export const ALL_AUTHORS = gql`
       name
       born
       bookCount
+      books
     }
   }
 `
@@ -18,6 +19,7 @@ const BOOK_DETAILS = gql`
       name
       born
       bookCount
+      books
     }
     published
   }
@@ -62,6 +64,7 @@ export const ADD_BOOK = gql`
         name
         born
         bookCount
+        books
       }
       genres
       published

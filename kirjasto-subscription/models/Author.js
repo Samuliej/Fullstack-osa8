@@ -14,7 +14,12 @@ const schema = new mongoose.Schema({
   bookCount: {
     type: Number,
     required: true
-  }
+  },
+  books: [
+    {
+      type: String,
+    }
+  ]
 })
 
 schema.plugin(uniqueValidator)

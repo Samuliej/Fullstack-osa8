@@ -1,6 +1,7 @@
 import { useMutation } from '@apollo/client'
 import { useState } from 'react'
-import { ADD_BOOK, ALL_AUTHORS, ALL_BOOKS } from '../queries'
+import { ADD_BOOK, ALL_BOOKS } from '../queries'
+import { updateBookGenreCache, updateBookListCache } from '../App'
 
 const NewBook = ({ setError, setNotif }) => {
   const [title, setTitle] = useState('')
@@ -11,60 +12,14 @@ const NewBook = ({ setError, setNotif }) => {
 
   const [ addBook ] = useMutation(ADD_BOOK, {
     onError: (error) => {
+      console.log(error.graphQLErrors[0])
+      console.log(error)
       setError(error.message)
     },
-    // works with using update
     update: (cache, response) => {
-      // Handles updating the genre buttons
-      cache.updateQuery({ query: ALL_BOOKS, variables: { genre: '' }}, ({ allBooks }) => {
-      return {
-        allBooks: allBooks.concat(response.data.addBook)
-      }
-      })
-
-      // Switched to using readQuery and writeQuery to fix a persisting bug of allBooks being null
-      // Handles updating allBooks list and Authors list
-      const existingBooks = cache.readQuery({ query: ALL_BOOKS })
-      const existingAuthors = cache.readQuery({ query: ALL_AUTHORS })
-
       const addedBook = response.data.addBook
-
-      const updatedBooks = [...existingBooks.allBooks, addedBook]
-
-      cache.writeQuery({
-        query: ALL_BOOKS,
-        data: { allBooks: updatedBooks },
-      })
-
-      const existingAuthor = existingAuthors.allAuthors.find(
-        author => author.name === addedBook.author.name
-      )
-
-      if (existingAuthor) {
-        const updatedAuthors = existingAuthors.allAuthors.map(author => {
-          if (author.name === existingAuthor.name) {
-            return { ...author, bookCount: author.bookCount + 1 }
-          }
-          return author
-        })
-
-        cache.writeQuery({
-          query: ALL_AUTHORS,
-          data: { allAuthors: updatedAuthors },
-        })
-      } else {
-        const newAuthor = {
-          ...addedBook.author,
-          bookCount: 1,
-        }
-
-        const updatedAuthors = [...existingAuthors.allAuthors, newAuthor]
-
-        cache.writeQuery({
-          query: ALL_AUTHORS,
-          data: { allAuthors: updatedAuthors },
-        })
-      }
+      updateBookGenreCache(cache, ALL_BOOKS, '', addedBook)
+      updateBookListCache(cache, ALL_BOOKS, addedBook)
     }
   })
 
