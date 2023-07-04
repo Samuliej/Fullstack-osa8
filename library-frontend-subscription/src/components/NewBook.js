@@ -21,43 +21,50 @@ const NewBook = ({ setError, setNotif }) => {
         allBooks: allBooks.concat(response.data.addBook)
       }
       })
-      // Handles updating all book list
-      cache.updateQuery({ query: ALL_BOOKS }, ({ allBooks }) => {
-        return {
-          allBooks: allBooks.concat(response.data.addBook)
-        }
+
+      // Switched to using readQuery and writeQuery to fix a persisting bug of allBooks being null
+      // Handles updating allBooks list and Authors list
+      const existingBooks = cache.readQuery({ query: ALL_BOOKS })
+      const existingAuthors = cache.readQuery({ query: ALL_AUTHORS })
+
+      const addedBook = response.data.addBook
+
+      const updatedBooks = [...existingBooks.allBooks, addedBook]
+
+      cache.writeQuery({
+        query: ALL_BOOKS,
+        data: { allBooks: updatedBooks },
       })
 
-      // Handles updating the authors for both new author and existing author case
-      cache.updateQuery({ query: ALL_AUTHORS }, ({ allAuthors }) => {
-        const addedBook = response.data.addBook
-        const existingAuthor = allAuthors.find(author => author.name === addedBook.author.name)
+      const existingAuthor = existingAuthors.allAuthors.find(
+        author => author.name === addedBook.author.name
+      )
 
-        if (existingAuthor) {
-          const updatedAuthors = allAuthors.map(author => {
-            if (author.name === existingAuthor.name) {
-              return {
-                ...author,
-                bookCount: author.bookCount + 1
-              }
-            }
-            return author
-          })
-
-          return {
-            allAuthors: updatedAuthors
+      if (existingAuthor) {
+        const updatedAuthors = existingAuthors.allAuthors.map(author => {
+          if (author.name === existingAuthor.name) {
+            return { ...author, bookCount: author.bookCount + 1 }
           }
+          return author
+        })
 
-          // Case of new author
-        } else {
-          return {
-            allAuthors: [...allAuthors, {...addedBook.author, bookCount: 1 }]
-          }
+        cache.writeQuery({
+          query: ALL_AUTHORS,
+          data: { allAuthors: updatedAuthors },
+        })
+      } else {
+        const newAuthor = {
+          ...addedBook.author,
+          bookCount: 1,
         }
-      })
 
+        const updatedAuthors = [...existingAuthors.allAuthors, newAuthor]
 
-
+        cache.writeQuery({
+          query: ALL_AUTHORS,
+          data: { allAuthors: updatedAuthors },
+        })
+      }
     }
   })
 

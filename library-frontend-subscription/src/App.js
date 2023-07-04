@@ -4,7 +4,7 @@ import NewBook from './components/NewBook'
 import LoginForm from './components/LoginForm'
 import Notification from './components/Notification'
 import RecommendBooks from './components/RecommendBooks'
-import { ALL_BOOKS } from './queries'
+import { ALL_BOOKS, BOOK_ADDED } from './queries'
 import { useEffect, useState } from 'react'
 import {
   Link,
@@ -12,7 +12,7 @@ import {
   Routes,
   useNavigate
 } from 'react-router-dom'
-import { useApolloClient, useQuery } from '@apollo/client'
+import { useApolloClient, useQuery, useSubscription } from '@apollo/client'
 
 const App = () => {
   const [errorMessage, setErrorMessage] = useState('')
@@ -21,6 +21,12 @@ const App = () => {
   const client = useApolloClient()
   const result = useQuery(ALL_BOOKS)
   const navigate = useNavigate()
+
+  useSubscription(BOOK_ADDED, {
+    onData: ({ data }) => {
+      window.alert(`Book '${data.data.bookAdded.title}' added`)
+    }
+  })
 
   useEffect(() => {
     const userToken = localStorage.getItem('library-user-token')
